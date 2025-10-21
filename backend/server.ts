@@ -17,7 +17,7 @@ const app = express();
 const port = 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 dotenv.config();
 
 const db = new sqlite3.Database('./photorevive.db', (err) => {
@@ -214,61 +214,69 @@ app.post('/api/add-credits', async (req, res) => {
     }
 });
 
+// ВСТАВЬТЕ ЭТОТ КОД ВМЕСТО СТАРОГО
 app.post('/api/restore', async (req, res) => {
-    const { base64ImageData, mimeType, prompt } = req.body;
+    const { image, mimeType, prompt } = req.body;
 
-    if (!base64ImageData || !mimeType || !prompt) {
-        return res.status(400).json({ message: 'Missing required parameters' });
+    if (!image || !mimeType || !prompt) {
+        return res.status(400).json({ message: 'Missing required parameters: image, mimeType, or prompt' });
+    }
+    if (!GEMINI_API_KEY || !GEMINI_API_BASE_URL) {
+        return res.status(500).json({ message: 'Server configuration error: API key or base URL is missing.' });
     }
 
     try {
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            generationConfig,
-            safetySettings,
-            // @ts-ignore
-            baseURL: GEMINI_API_BASE_URL,
+        console.log("Sending request to Artemox API via fetch...");
+
+        // Используем fetch для отправки запроса в формате, который ожидает прокси
+        const response = await fetch(`${GEMINI_API_BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GEMINI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gemini-1.5-flash", 
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:${mimeType};base64,${image}`
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens: 2048 
+            })
         });
 
-        const imagePart = {
-            inlineData: {
-                data: base64ImageData,
-                mimeType,
-            },
-        };
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("Error from Artemox API:", response.status, errorBody);
+            throw new Error(`API request failed with status ${response.status}`);
+        }
 
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = result.response;
-        const text = response.text();
-        
-        // Assuming the API returns a base64 string directly in the text response
-        // You might need to adjust this based on the actual API response format
-        if (text) {
-            // The response might be plain text or a JSON string.
-            // Let's try to parse it as JSON first.
-            try {
-                const jsonResponse = JSON.parse(text);
-                if (jsonResponse.image_url) {
-                     res.json({ imageUrl: jsonResponse.image_url, mimeType: 'image/png' }); // Adjust mimeType if needed
-                     return;
-                }
-            } catch (e) {
-                // Not a JSON response, assume it's the base64 string
-            }
+        const data = await response.json();
+        const aiResponseContent = data.choices[0]?.message?.content;
 
-            // Assuming the response is the base64 string of the image
-            const restoredMimeType = 'image/png'; // Adjust if the API provides mime type
-            res.json({ imageUrl: `data:${restoredMimeType};base64,${text}`, mimeType: restoredMimeType });
+        if (aiResponseContent) {
+            console.log("Successfully received response from Artemox API.");
+            res.json({ imageUrl: aiResponseContent, mimeType: 'image/png' }); 
         } else {
-            throw new Error("The model did not return any content.");
+            console.error("Invalid response structure from API:", data);
+            throw new Error("The model did not return any content in the expected format.");
         }
 
     } catch (error) {
-        console.error("Error calling Gemini API:", error);
+        console.error("Error in /api/restore endpoint:", error);
         res.status(500).json({ message: 'Failed to restore image' });
     }
 });
-
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

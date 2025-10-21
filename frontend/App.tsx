@@ -6,7 +6,7 @@ import SettingsModal from './components/SettingsModal';
 import UpscalingModal from './components/UpscalingModal';
 import WelcomeScreen from './components/WelcomeScreen';
 import PaymentModal from './components/PaymentModal';
-import { restorePhoto } from './services/kometService';
+import { restorePhoto } from './services/apiService';
 import { ResultItem, ComparisonMode, PromptMode } from './types';
 import { useAuth } from './context/AuthContext';
 import { useTranslations } from './hooks/useTranslations';
