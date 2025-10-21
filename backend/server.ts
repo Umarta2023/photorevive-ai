@@ -3,7 +3,6 @@ import cors from 'cors';
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 import dotenv from 'dotenv';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 interface User {
     id: number;
