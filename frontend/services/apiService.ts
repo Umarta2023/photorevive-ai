@@ -6,7 +6,8 @@ interface RestoreResult {
 }
 
 // Правильный URL вашего бэкенда с верным портом и путем
-const BACKEND_API_URL = 'http://localhost:3001/api/restore';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BACKEND_API_URL = `${API_BASE_URL}/api/restore`;
 
 export const restorePhoto = async (
   base64Data: string, 
