@@ -60,33 +60,8 @@ if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable not set");
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const generationConfig = {
-    temperature: 0.4,
-    topP: 1,
-    topK: 32,
-    maxOutputTokens: 4096,
-};
 
-const safetySettings = [
-    {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-];
 
 // API routes will go here
 
